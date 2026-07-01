@@ -1,0 +1,15 @@
+# Systems, Hardware, and Deployment
+
+<details open>
+<summary><strong>Inference Frameworks, Quantization Formats, Hardware, and Kernels</strong></summary>
+
+| **Title & Authors** | **Areas** | **Tags** | **Links** |
+| --- | --- | --- | :---: |
+| [![arXiv](https://img.shields.io/badge/arXiv-2023-red)]()<br>[FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU](https://arxiv.org/abs/2303.06865)<br>Ying Sheng et al. | [![Area](https://img.shields.io/badge/Area-System-purple)]() [![Area](https://img.shields.io/badge/Area-Serving-purple)]() | [![Type](https://img.shields.io/badge/Type-Offloading-green)]() [![Type](https://img.shields.io/badge/Type-Compression-green)]() | [Paper](https://arxiv.org/abs/2303.06865)<br>[Code](https://github.com/FMInference/FlexGen) |
+| [![arXiv](https://img.shields.io/badge/arXiv-2023-red)]()<br>[Atom: Low-bit Quantization for Efficient and Accurate LLM Serving](https://arxiv.org/abs/2310.19102)<br>Yilong Zhao et al. | [![Area](https://img.shields.io/badge/Area-Serving-purple)]() [![Area](https://img.shields.io/badge/Area-System-purple)]() | [![Type](https://img.shields.io/badge/Type-Low--Bit-green)]() [![Type](https://img.shields.io/badge/Type-Kernel--Aware-green)]() | [Paper](https://arxiv.org/abs/2310.19102) |
+| [![GitHub](https://img.shields.io/badge/GitHub-Tool-blue)]()<br>[TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM)<br>NVIDIA | [![Area](https://img.shields.io/badge/Area-Framework-purple)]() [![Area](https://img.shields.io/badge/Area-Deployment-purple)]() | [![Type](https://img.shields.io/badge/Type-Inference-green)]() [![Type](https://img.shields.io/badge/Type-Kernel-green)]() | [Paper](https://github.com/NVIDIA/TensorRT-LLM) |
+| [![GitHub](https://img.shields.io/badge/GitHub-Tool-blue)]()<br>[AutoGPTQ](https://github.com/AutoGPTQ/AutoGPTQ)<br>AutoGPTQ Contributors | [![Area](https://img.shields.io/badge/Area-Framework-purple)]() [![Area](https://img.shields.io/badge/Area-GPTQ-purple)]() | [![Type](https://img.shields.io/badge/Type-Serving-green)]() [![Type](https://img.shields.io/badge/Type-W4A16-green)]() | [Paper](https://github.com/AutoGPTQ/AutoGPTQ) |
+| [![GitHub](https://img.shields.io/badge/GitHub-Tool-blue)]()<br>[AutoAWQ](https://github.com/casper-hansen/AutoAWQ)<br>AutoAWQ Contributors | [![Area](https://img.shields.io/badge/Area-Framework-purple)]() [![Area](https://img.shields.io/badge/Area-AWQ-purple)]() | [![Type](https://img.shields.io/badge/Type-Serving-green)]() [![Type](https://img.shields.io/badge/Type-W4A16-green)]() | [Paper](https://github.com/casper-hansen/AutoAWQ) |
+| [![GitHub](https://img.shields.io/badge/GitHub-Tool-blue)]()<br>[bitsandbytes](https://github.com/bitsandbytes-foundation/bitsandbytes)<br>bitsandbytes Contributors | [![Area](https://img.shields.io/badge/Area-Framework-purple)]() [![Area](https://img.shields.io/badge/Area-Training-purple)]() | [![Type](https://img.shields.io/badge/Type-INT8-green)]() [![Type](https://img.shields.io/badge/Type-NF4-green)]() | [Paper](https://github.com/bitsandbytes-foundation/bitsandbytes) |
+
+</details>

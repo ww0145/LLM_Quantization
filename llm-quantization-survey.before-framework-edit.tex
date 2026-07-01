@@ -1,0 +1,253 @@
+\documentclass[journal,10pt]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{balance}
+\usepackage{url}
+\usepackage{pifont}
+
+\newcommand{\ie}{\textit{i.e.}}
+\newcommand{\eg}{\textit{e.g.}}
+\newcommand{\etal}{\textit{et al.}}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\newcommand{\TODO}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+\newcommand{\CITE}{\textcolor{blue}{[?]}}
+
+\begin{document}
+
+\title{A Comprehensive Survey on Large Language Model Quantization:\\
+Taxonomy, Techniques, Systems, and Frontiers}
+
+\author{
+  Wei~Wang
+  \thanks{W. Wang is with the School of Information Engineering, Minzu University of China, Beijing 100081, China, and also affiliated with City University of Macau.}
+}
+
+\markboth{IEEE Transactions on XXXX, Vol.~XX, No.~X, 2025}
+{Wang: A Comprehensive Survey on Large Language Model Quantization}
+
+\maketitle
+
+\begin{abstract}
+Large language models (LLMs) have achieved remarkable progress in language understanding, generation, coding, reasoning, and multimodal interaction. However, their rapidly increasing parameter counts, long-context memory requirements, and autoregressive decoding costs create substantial barriers to practical deployment. Quantization has become one of the most important techniques for reducing memory footprint, inference latency, energy consumption, and serving cost.
+
+Unlike general neural network quantization, LLM quantization faces distinctive challenges, including activation outliers, sensitivity of emergent abilities, long-context key-value (KV) cache growth, prefill--decode phase asymmetry, and the need to preserve instruction-following and safety alignment. This survey presents a taxonomy-centered review of LLM quantization. We organize existing work along four complementary axes: \emph{by stage}, \emph{by target}, \emph{by technique}, and \emph{by scenario}. We further discuss systems, hardware, evaluation protocols, safety, theoretical understanding, and open problems.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Large language models, model quantization, post-training quantization, quantization-aware training, KV cache quantization, low-precision training, efficient inference.
+\end{IEEEkeywords}
+
+\section{Introduction}
+\IEEEPARstart{L}{arge} language models have become foundational infrastructure for modern artificial intelligence. Scaling model size, training data, context length, and test-time computation has improved performance but also made inference and deployment increasingly expensive. Quantization addresses these bottlenecks by representing model tensors with low-precision numerical formats.
+
+This survey focuses specifically on LLM quantization rather than general neural network quantization. Compared with CNNs, ViTs, diffusion models, or GNNs, LLMs have unique characteristics: decoder-only Transformer blocks, autoregressive decoding, KV cache growth, instruction tuning, long-context workloads, MoE routing, reasoning behavior, and safety alignment.
+
+\subsection{Scope}
+This survey covers quantization methods and systems that directly target LLMs or closely related Transformer-based generative models. The main scope includes PTQ, QAT, quantized fine-tuning, low-precision training, weight/activation/KV-cache quantization, outlier mitigation, mixed precision, vector quantization, serving systems, hardware support, evaluation methodology, safety, and theoretical analysis.
+
+We intentionally remove non-LLM-centered domains such as CNN quantization, ViT-specific quantization, diffusion model quantization, GNN quantization, robotics/VLA quantization, 3D point cloud quantization, and medical imaging quantization from the main taxonomy.
+
+\subsection{Contributions}
+\begin{itemize}[leftmargin=*,nosep]
+  \item We propose a taxonomy-centered organization of LLM quantization along four axes: stage, target, technique, and scenario.
+  \item We consolidate representative methods including LLM.int8(), GPTQ, AWQ, SmoothQuant, QuIP/QuIP\#, QuaRot, SpinQuant, AQLM, SqueezeLLM, HQQ, SpQR, KVQuant, KIVI, QLoRA, QA-LoRA, SQFT, BitNet b1.58, DeepSeek-V3 FP8 training, and Quartet.
+  \item We connect algorithmic methods with systems concerns such as quantized kernels, serving frameworks, KV cache management, speculative decoding, and hardware-native FP8/FP4 formats.
+  \item We summarize evaluation, safety, robustness, and theoretical questions that are especially important for LLM quantization.
+\end{itemize}
+
+\section{Background: LLMs and Quantization Fundamentals}
+
+\subsection{LLM Architecture and Inference}
+Most modern LLMs are decoder-only Transformers. Each layer contains attention, feed-forward networks, residual connections, and normalization modules. During inference, computation is divided into a prefill phase and a decode phase. The prefill phase processes prompts in parallel and is often compute-bound, while the decode phase generates tokens sequentially and is frequently memory-bandwidth-bound.
+
+\subsection{Number Formats}
+Representative formats include FP32, BF16, FP16, FP8-E4M3, FP8-E5M2, INT8, INT4, NF4, MXFP4, NVFP4, ternary, and binary formats. FP8 and FP4 formats are increasingly important for training and hardware-native inference, while INT4 and NF4 are widely used for weight-only inference and quantized fine-tuning.
+
+\subsection{Quantization Granularity}
+LLM quantization commonly uses per-tensor, per-channel, per-group, per-token, per-head, or per-block scaling. Weight-only 4-bit quantization often uses group-wise scales, while activation and KV cache quantization may require token-wise, channel-wise, or head-wise treatment.
+
+\subsection{LLM-Specific Challenges}
+\begin{itemize}[leftmargin=*,nosep]
+  \item Activation outliers make low-bit activation quantization difficult.
+  \item KV cache memory grows linearly with context length.
+  \item Quantization errors can accumulate during long-context generation.
+  \item Reasoning, coding, and instruction-following abilities may be sensitive to precision loss.
+  \item MoE and multimodal LLMs introduce heterogeneous precision requirements.
+\end{itemize}
+
+\section{Taxonomy of LLM Quantization}
+
+\begin{itemize}[leftmargin=*,nosep]
+  \item \textbf{By Stage}: PTQ, QAT, quantized fine-tuning, low-precision pre-training.
+  \item \textbf{By Target}: weights, activations, KV cache, attention, embeddings, optimizer states, gradients.
+  \item \textbf{By Technique}: outlier handling, Hessian/reconstruction, rotation/smoothing, mixed precision, codebook/vector quantization, data-free quantization.
+  \item \textbf{By Scenario}: long-context LLMs, MoE LLMs, reasoning LLMs, multimodal LLMs, edge deployment, high-throughput serving.
+\end{itemize}
+
+\TODO{Add a taxonomy figure with LLM Quantization at the center and four branches: By Stage, By Target, By Technique, and By Scenario.}
+
+\section{LLM Quantization by Stage}
+
+\subsection{Post-Training Quantization}
+PTQ quantizes a pre-trained LLM without full retraining and is the dominant practical approach for deployment.
+
+\subsubsection{Rounding and Reconstruction}
+RTN provides a simple baseline. GPTQ~\CITE\ uses Hessian-guided column-wise quantization and error compensation. BRECQ~\CITE\ performs block-wise reconstruction. AdaRound~\CITE\ and FlexRound~\CITE\ optimize rounding decisions.
+
+\subsubsection{Activation-Aware and Outlier-Aware PTQ}
+AWQ~\CITE\ identifies activation-aware salient weights. LLM.int8()~\CITE\ separates outlier channels. SmoothQuant~\CITE\ migrates quantization difficulty from activations to weights.
+
+\subsubsection{Transformation-Based PTQ}
+QuIP/QuIP\#~\CITE, QuaRot~\CITE, SpinQuant~\CITE, SmoothRot~\CITE, AffineQuant~\CITE, and QuEST~\CITE\ reshape weight or activation distributions before quantization.
+
+\subsubsection{Cross-Layer and Cross-Block PTQ}
+CBQ~\CITE, BOA/TurboBOA~\CITE, QEP~\CITE, LoaQ~\CITE, and LPCD~\CITE\ address error propagation beyond isolated layer-wise reconstruction.
+
+\subsection{Quantization-Aware Training}
+QAT inserts fake quantization into training and uses the straight-through estimator. Representative methods include PACT~\CITE, LSQ/LSQ+~\CITE, progressive precision annealing~\CITE, Fisher-aware mixed-precision QAT~\CITE, and QAT with knowledge distillation~\CITE.
+
+\subsection{Quantized Fine-Tuning}
+QLoRA~\CITE\ freezes a 4-bit NF4 backbone and trains LoRA adapters. QA-LoRA~\CITE, SQFT~\CITE, OWQ~\CITE, Delta-CoMe~\CITE, and Configuration-Aware LoRA~\CITE\ combine quantization with PEFT, sparse updates, delta compression, or configuration-aware adaptation.
+
+\subsection{Low-Precision Pre-Training}
+DeepSeek-V3~\CITE\ demonstrates FP8 pre-training at large MoE scale. Quartet~\CITE\ explores MXFP4 native training. BitNet b1.58~\CITE\ trains ternary-weight models from scratch.
+
+\section{LLM Quantization by Target}
+
+\subsection{Weight Quantization}
+Weight-only quantization compresses model parameters and is widely used because LLM decoding is memory-bandwidth-bound. Representative methods include GPTQ~\CITE, AWQ~\CITE, QuIP\#~\CITE, AQLM~\CITE, SqueezeLLM~\CITE, HQQ~\CITE, SpQR~\CITE, PB-LLM~\CITE, BiLLM~\CITE, and QBB~\CITE.
+
+\subsection{Activation Quantization}
+Activation quantization enables W8A8 or W4A4 computation but is challenged by activation outliers. Representative methods include SmoothQuant~\CITE, LLM.int8()~\CITE, Atom~\CITE, QuaRot~\CITE, SpinQuant~\CITE, and activation regularization methods~\CITE.
+
+\subsection{KV Cache Quantization}
+KV cache quantization is essential for long-context serving. Representative methods include KVQuant~\CITE, KIVI~\CITE, KVmix~\CITE, WKVQuant~\CITE, Coupled Quantization~\CITE, ZipCache~\CITE, PQCache~\CITE, Cocktail~\CITE, and Oaken~\CITE.
+
+\subsection{Attention Quantization}
+Attention quantization includes low-precision attention scores, queries, keys, values, and attention kernels. SageAttention~\CITE\ explores 8-bit and FP4 attention quantization. BOA~\CITE\ uses attention reconstruction errors as a PTQ objective.
+
+\subsection{Embedding Quantization}
+Embedding layers and output projections can consume substantial memory in large-vocabulary LLMs. Quantizing them can reduce footprint, but output embeddings are often sensitive because they directly affect token probabilities.
+
+\subsection{Optimizer and Gradient Quantization}
+8-bit Adam~\CITE, 4-bit Adam~\CITE, COAT~\CITE, SOLO~\CITE, TernGrad~\CITE, 1-bit Adam~\CITE, QSGD~\CITE, and Deep Gradient Compression~\CITE\ reduce memory or communication cost during training.
+
+\section{LLM Quantization by Technique}
+
+\subsection{Outlier Handling}
+Outlier handling includes mixed-precision decomposition in LLM.int8()~\CITE, channel-wise migration in SmoothQuant~\CITE, salient-weight scaling in AWQ~\CITE, dense-and-sparse separation in SqueezeLLM~\CITE, outlier channel splitting~\CITE, rotation transforms in QuaRot~\CITE\ and SpinQuant~\CITE, and clustering-based smoothing in CodeQuant~\CITE.
+
+\subsection{Hessian and Reconstruction}
+GPTQ~\CITE, BRECQ~\CITE, AdaRound~\CITE, FlexRound~\CITE, HAWQ~\CITE, and Fisher-aware methods~\CITE\ use curvature, reconstruction error, or sensitivity estimates to guide quantization.
+
+\subsection{Rotation and Smoothing}
+SmoothQuant~\CITE, QuaRot~\CITE, QuIP/QuIP\#~\CITE, SpinQuant~\CITE, SmoothRot~\CITE, AffineQuant~\CITE, and QuEST~\CITE\ transform distributions before quantization to reduce outlier effects.
+
+\subsection{Mixed Precision}
+Mixed-precision methods allocate different bit-widths to layers, heads, experts, channels, or blocks. Representative work includes HAWQ~\CITE, LIM~\CITE, KVmix~\CITE, Matryoshka Quantization~\CITE, and layer-importance-driven KV cache methods.
+
+\subsection{Codebook and Vector Quantization}
+AQLM~\CITE, GPTVQ~\CITE, VPTQ~\CITE, PQCache~\CITE, and LUT-GEMM~\CITE\ use codebooks, product quantization, residual vector quantization, or lookup-table computation.
+
+\subsection{Data-Free Quantization}
+ZeroQ~\CITE, GENIE~\CITE, and SynQ~\CITE\ synthesize calibration data or use distillation objectives when real calibration data is unavailable.
+
+\section{LLM Quantization by Scenario}
+
+\subsection{Long-Context LLMs}
+Long-context LLMs stress quantization because KV cache memory grows linearly with sequence length. KVQuant~\CITE, KIVI~\CITE, KVmix~\CITE, WKVQuant~\CITE, ZipCache~\CITE, PQCache~\CITE, Cocktail~\CITE, and Oaken~\CITE\ address long-context memory efficiency.
+
+\subsection{Mixture-of-Experts LLMs}
+MoE LLMs require expert-aware quantization because experts differ in routing frequency, activation statistics, and sensitivity. CodeQuant~\CITE\ targets MoE outlier smoothing. DeepSeek-V3~\CITE\ demonstrates large-scale FP8 training in an MoE setting.
+
+\subsection{Reasoning LLMs}
+Reasoning models with long chain-of-thought generation may amplify quantization errors. Studies~\CITE\ suggest W8A8 and W4A16 are often safer than more aggressive low-bit settings for math and coding tasks. QeRL~\CITE\ explores quantization-enhanced reinforcement learning.
+
+\subsection{Multimodal LLMs}
+Multimodal LLMs combine visual encoders, projectors, language backbones, and sometimes audio or video modules. Q-VLM~\CITE\ studies heterogeneous precision needs in vision-language models.
+
+\subsection{Edge Deployment}
+Edge deployment emphasizes memory footprint, energy, thermal limits, and offline usability. llama.cpp/GGUF quantization types such as Q4\_K\_M, Q5\_K\_S, and Q2\_K are widely used.
+
+\subsection{High-Throughput Serving}
+High-throughput serving emphasizes tokens/s, TTFT, TPOT, batching efficiency, and GPU memory utilization. Quantization interacts with continuous batching, PagedAttention, speculative decoding, and KV cache allocation. QSpec~\CITE\ and QuantSpec~\CITE\ study quantization with speculative decoding.
+
+\section{Systems, Hardware, and Deployment}
+
+\subsection{Inference Frameworks}
+Representative systems include llama.cpp/GGUF~\CITE, vLLM~\CITE, TensorRT-LLM~\CITE, SGLang~\CITE, ONNX Runtime, OpenVINO, Core ML, ExLlamaV2, bitsandbytes, AutoGPTQ, AutoAWQ, HQQ, and AMD Quark.
+
+\subsection{Quantization Formats}
+GGUF defines many mixed quantization types. GPTQ, AWQ, EXL2, HQQ, and bitsandbytes use different conventions. Hardware-native formats such as FP8, MXFP4, and NVFP4 are increasingly important.
+
+\subsection{Hardware-Native Quantization}
+NVIDIA Hopper supports FP8, while Blackwell introduces FP4/MXFP4/NVFP4 support. AMD MI355X supports MXFP4. Edge platforms include Apple ANE, Qualcomm Hexagon NPU, ARM CPUs, and mobile GPUs.
+
+\subsection{Quantized Kernels}
+Efficient kernels include W4A16 dequantization-fused GEMM such as Marlin, W8A8 and W4A4 integer GEMM, LUT-GEMM~\CITE, fused Hadamard-quantize-GEMM in Quartet~\CITE, QuTLASS~\CITE, Triton kernels, CUTLASS kernels, and shift-and-sum implementations.
+
+\section{Evaluation and Benchmarking}
+
+\subsection{Accuracy Metrics}
+Perplexity on WikiText-2, C4, and PTB remains common but insufficient. LLM quantization should also be evaluated on MMLU, GSM8K, AIME, GPQA, HumanEval, LiveCodeBench, and instruction-following benchmarks.
+
+\subsection{Long-Context Evaluation}
+Long-context evaluation should include RULER, InfiniteBench, needle-in-a-haystack tests, long-document QA, and multi-turn dialogue.
+
+\subsection{System Metrics}
+System evaluation should report memory footprint, peak GPU memory, throughput, TTFT, TPOT, energy per token, batch size, context length, kernel implementation, and hardware platform.
+
+\section{Safety, Robustness, and Reliability}
+
+\subsection{Safety Alignment}
+Quantization can degrade safety alignment even when perplexity remains acceptable. CAQ~\CITE\ introduces a contrastive alignment loss to preserve safety during PTQ.
+
+\subsection{Adversarial Robustness}
+Defensive Quantization~\CITE\ studies adversarial vulnerability under quantization. Later work reports mixed effects depending on the attack and model.
+
+\subsection{Backdoor and Privacy Risks}
+Qu-anti-zation~\CITE, Quantization Blindspots~\CITE, and EFRAP~\CITE\ study quantization-conditioned backdoors. Dynamic quantization may also leak information through shared scales or temporal scale variation~\CITE.
+
+\section{Theoretical Understanding}
+
+\subsection{Error Modeling}
+Quantization error can be modeled as additive noise, multiplicative noise, or structured perturbation. In LLMs, errors propagate through residual streams, attention, and normalization. QEP~\CITE, LoaQ~\CITE, and LPCD~\CITE\ explicitly address error propagation.
+
+\subsection{Scaling Laws}
+Recent work studies relationships among model size, training data, group size, and precision. Topics include low-bit quantization favoring undertrained LLMs~\CITE, FP quantization scaling laws~\CITE, QAT scaling laws~\CITE, and critical data size phenomena~\CITE.
+
+\subsection{Emergent Abilities}
+Quantization can affect in-context learning, chain-of-thought reasoning, coding, mathematical problem solving, and tool use. These abilities may degrade nonlinearly with bit-width.
+
+\section{Open Problems and Future Directions}
+
+\begin{enumerate}[leftmargin=*,label=\textbf{\arabic*.}]
+  \item \textbf{Sub-4-bit LLM quantization.} Closing the accuracy gap at 2--3 bits while preserving hardware efficiency remains challenging.
+  \item \textbf{Quantization for reasoning models.} Long chain-of-thought generation may amplify quantization errors.
+  \item \textbf{KV cache and long-context compression.} Future methods must reduce cache memory without harming retrieval and reasoning.
+  \item \textbf{Quantization-native training.} FP8, FP4, MXFP4, ternary, and binary training require better optimization theory and hardware-software co-design.
+  \item \textbf{MoE and multimodal LLM quantization.} Expert-specific and modality-specific precision allocation remains underdeveloped.
+  \item \textbf{Safety-aware quantization.} PTQ and QAT objectives should explicitly preserve alignment and refusal behavior.
+  \item \textbf{Standardized benchmarking.} The field needs reproducible comparisons across bit-widths, formats, kernels, hardware, tasks, and context lengths.
+  \item \textbf{Interoperable formats.} Deployment would benefit from convergence among GGUF, GPTQ, AWQ, EXL2, HQQ, and hardware-native formats.
+\end{enumerate}
+
+\section{Conclusion}
+This survey reorganizes LLM quantization around a taxonomy of stage, target, technique, and scenario. By focusing on LLM-specific challenges such as activation outliers, KV cache growth, long-context inference, reasoning degradation, MoE routing, multimodal heterogeneity, and safety preservation, the proposed framework separates LLM quantization from broader neural network quantization.
+
+\section*{Acknowledgment}
+\TODO{Advisor acknowledgment, funding, and collaborator acknowledgment.}
+
+\balance
+\end{document}

@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LLM Quantization Survey Framework</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #586174;
+      --paper: #f7f9fc;
+      --center: #182133;
+      --blue: #dcecff;
+      --blue-line: #3b73d9;
+      --green: #e1f5e9;
+      --green-line: #2f9b62;
+      --amber: #fff0d7;
+      --amber-line: #d88919;
+      --rose: #ffe4e8;
+      --rose-line: #dd5870;
+      --violet: #eee7ff;
+      --violet-line: #7c5ad9;
+      --slate: #e9edf3;
+      --slate-line: #718096;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #dfe6ef;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    }
+
+    .slide {
+      position: relative;
+      width: min(96vw, 1280px);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid #cfd8e5;
+      box-shadow: 0 24px 70px rgba(25, 35, 55, 0.22);
+      padding: 38px 48px 34px;
+    }
+
+    .title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 36px;
+      line-height: 1.08;
+      letter-spacing: 0;
+      color: #111827;
+    }
+
+    .subtitle {
+      margin: 7px 0 0;
+      font-size: 18px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .tag {
+      flex: 0 0 auto;
+      padding: 10px 15px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid #d8e0ea;
+      font-size: 15px;
+      font-weight: 700;
+      color: #40506a;
+    }
+
+    .canvas {
+      position: relative;
+      height: calc(100% - 86px);
+    }
+
+    .center {
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      transform: translateX(-50%);
+      width: 350px;
+      min-height: 92px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border-radius: 10px;
+      background: var(--center);
+      color: white;
+      box-shadow: 0 12px 28px rgba(24, 33, 51, 0.22);
+      z-index: 3;
+    }
+
+    .center strong {
+      display: block;
+      font-size: 27px;
+      line-height: 1.12;
+    }
+
+    .center span {
+      display: block;
+      margin-top: 6px;
+      font-size: 16px;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .axes {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 128px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      z-index: 2;
+    }
+
+    .support {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      z-index: 2;
+    }
+
+    .card {
+      min-height: 218px;
+      border-radius: 10px;
+      border: 2px solid;
+      background: #fff;
+      padding: 17px 17px 15px;
+      box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .card p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .card ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .card li {
+      font-size: 15px;
+      line-height: 1.22;
+      font-weight: 650;
+      color: #263246;
+    }
+
+    .card li strong {
+      color: #111827;
+      font-weight: 800;
+    }
+
+    .stage {
+      background: var(--blue);
+      border-color: var(--blue-line);
+    }
+
+    .target {
+      background: var(--green);
+      border-color: var(--green-line);
+    }
+
+    .technique {
+      background: var(--amber);
+      border-color: var(--amber-line);
+    }
+
+    .scenario {
+      background: var(--rose);
+      border-color: var(--rose-line);
+    }
+
+    .mini {
+      min-height: 112px;
+      padding: 15px 16px;
+      border-radius: 10px;
+      border: 2px solid;
+      box-shadow: 0 8px 18px rgba(31, 41, 55, 0.07);
+    }
+
+    .mini h3 {
+      margin: 0 0 8px;
+      font-size: 19px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .mini div {
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 700;
+      color: #36435a;
+    }
+
+    .systems {
+      background: #eef7ff;
+      border-color: #4b8de8;
+    }
+
+    .eval {
+      background: #f0fbf2;
+      border-color: #35a867;
+    }
+
+    .trust {
+      background: var(--violet);
+      border-color: var(--violet-line);
+    }
+
+    .future {
+      background: var(--slate);
+      border-color: var(--slate-line);
+    }
+
+    svg.links {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .link {
+      fill: none;
+      stroke: #9aa7bb;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .link-strong {
+      stroke: #6f7e95;
+      stroke-width: 4;
+    }
+
+    .footer-note {
+      position: absolute;
+      right: 18px;
+      bottom: 10px;
+      font-size: 12px;
+      color: #7b8496;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main class="slide" aria-label="LLM Quantization Survey Framework">
+    <header class="title">
+      <div>
+        <h1>LLM Quantization Survey Framework</h1>
+        <p class="subtitle">A compact taxonomy for methods, deployment constraints, and research frontiers</p>
+      </div>
+      <div class="tag">Survey Status Map</div>
+    </header>
+
+    <section class="canvas">
+      <svg class="links" viewBox="0 0 1184 530" preserveAspectRatio="none" aria-hidden="true">
+        <path class="link link-strong" d="M592 80 C592 105 160 105 140 132" />
+        <path class="link link-strong" d="M592 80 C592 110 450 106 435 132" />
+        <path class="link link-strong" d="M592 80 C592 110 735 106 750 132" />
+        <path class="link link-strong" d="M592 80 C592 105 1030 105 1044 132" />
+
+        <path class="link" d="M140 328 C140 372 140 375 140 402" />
+        <path class="link" d="M435 328 C435 372 435 375 435 402" />
+        <path class="link" d="M750 328 C750 372 750 375 750 402" />
+        <path class="link" d="M1044 328 C1044 372 1044 375 1044 402" />
+      </svg>
+
+      <div class="center">
+        <div>
+          <strong>LLM Quantization</strong>
+          <span>outliers · KV cache · prefill/decode · safety</span>
+        </div>
+      </div>
+
+      <div class="axes">
+        <article class="card stage">
+          <h2>By Stage</h2>
+          <p>When low precision enters</p>
+          <ul>
+            <li><strong>PTQ:</strong> RTN, GPTQ, AWQ, SmoothQuant, OmniQuant</li>
+            <li><strong>QAT:</strong> fake quantization, distillation, continued training</li>
+            <li><strong>Fine-tuning:</strong> QLoRA, QA-LoRA, LoftQ, adapter learning</li>
+            <li><strong>Pre-training:</strong> FP8-LM, BitNet, quantization-native recipes</li>
+          </ul>
+        </article>
+
+        <article class="card target">
+          <h2>By Target</h2>
+          <p>Which tensors are compressed</p>
+          <ul>
+            <li><strong>Weights:</strong> storage, decode bandwidth, W4A16 deployment</li>
+            <li><strong>Activations:</strong> outliers, W8A8/W4A4 compute kernels</li>
+            <li><strong>KV cache:</strong> long-context memory, KIVI, KVQuant, GEAR</li>
+            <li><strong>Training states:</strong> gradients, optimizer, communication buffers</li>
+          </ul>
+        </article>
+
+        <article class="card technique">
+          <h2>By Technique</h2>
+          <p>How error is controlled</p>
+          <ul>
+            <li><strong>Outlier-aware:</strong> channel isolation, salient-weight protection</li>
+            <li><strong>Hessian/reconstruction:</strong> layer/block output preservation</li>
+            <li><strong>Rotation/smoothing:</strong> SmoothQuant, QuIP, SpinQuant</li>
+            <li><strong>Allocation:</strong> mixed precision, codebooks, vector quantization</li>
+          </ul>
+        </article>
+
+        <article class="card scenario">
+          <h2>By Scenario</h2>
+          <p>Where methods are used</p>
+          <ul>
+            <li><strong>Long-context:</strong> cache growth, retrieval stability, attention drift</li>
+            <li><strong>MoE:</strong> expert sensitivity, routing frequency, FP8 training</li>
+            <li><strong>Reasoning/multimodal:</strong> CoT, code, math, visual projectors</li>
+            <li><strong>Deployment:</strong> edge memory, serving throughput, TTFT/TPOT</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="support">
+        <article class="mini systems">
+          <h3>Systems & Hardware</h3>
+          <div>GGUF/GPTQ/AWQ · Marlin/Triton/CUTLASS · FP8/FP4 tensor cores</div>
+        </article>
+
+        <article class="mini eval">
+          <h3>Evaluation</h3>
+          <div>PPL/MMLU/GSM8K/HumanEval · RULER · latency · memory · energy</div>
+        </article>
+
+        <article class="mini trust">
+          <h3>Trustworthiness & Theory</h3>
+          <div>Safety · robustness · privacy · error propagation</div>
+        </article>
+
+        <article class="mini future">
+          <h3>Open Problems</h3>
+          <div>Sub-4-bit · KV cache · reasoning · MoE/multimodal · benchmarks</div>
+        </article>
+      </div>
+    </section>
+
+    <div class="footer-note">Source: local survey taxonomy</div>
+  </main>
+</body>
+</html>
